@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Книжный магазин</title>
+    <style>
+      :root {
+        --bg: #f9fbff;
+        --card: #ffffff;
+        --border: #dbe3ef;
+        --text: #1f2937;
+        --muted: #4b5563;
+        --accent: #7c9bff;
+        --accent-strong: #5f82fb;
+        --accent-soft: #e9edff;
+        --success: #7bd97b;
+        --error: #f28b82;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: var(--bg);
+        color: var(--text);
+      }
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 8px;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        padding: 14px;
+        margin-bottom: 16px;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      }
+      label {
+        display: block;
+        margin-top: 8px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-top: 4px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #f8f9fb;
+        color: var(--text);
+        transition:
+          border 0.2s,
+          box-shadow 0.2s;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(124, 155, 255, 0.25);
+      }
+      button {
+        margin-top: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        border: none;
+        border-radius: 8px;
+        background: var(--accent);
+        color: white;
+        font-weight: 600;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+      }
+      button:hover {
+        background: var(--accent-strong);
+      }
+      button:active {
+        transform: translateY(1px);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+      }
+      .book {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        background: #fefeff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 2px 0;
+      }
+      .tag {
+        background: var(--accent-soft);
+        padding: 2px 6px;
+        border-radius: 6px;
+        margin-right: 4px;
+        display: inline-block;
+        font-size: 12px;
+      }
+      .pill {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        display: inline-block;
+        background: #eef2ff;
+      }
+      #toast-container {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 1000;
+      }
+      .toast {
+        min-width: 220px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+        opacity: 0.98;
+        transition:
+          opacity 0.4s ease,
+          transform 0.4s ease;
+      }
+      .toast-success {
+        border-color: var(--success);
+        background: #edffed;
+      }
+      .toast-error {
+        border-color: var(--error);
+        background: #ffecec;
+      }
+      .toast.hide {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .row > * {
+        flex: 1;
+        min-width: 180px;
+      }
+      small {
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toast-container"></div>
+    <h1>Книжный магазин</h1>
+
+    <section>
+      <h2>Пользователь</h2>
+      <div class="row">
+        <div>
+          <label
+            >Категория <input id="filter-category" placeholder="Роман"
+          /></label>
+        </div>
+        <div>
+          <label
+            >Автор <input id="filter-author" placeholder="Булгаков"
+          /></label>
+        </div>
+        <div>
+          <label
+            >Год <input id="filter-year" type="number" placeholder="1966"
+          /></label>
+        </div>
+        <div>
+          <label
+            >Сортировка
+            <select id="filter-sort">
+              <option value="">По умолчанию</option>
+              <option value="category">По категории</option>
+              <option value="author">По автору</option>
+              <option value="year">По году</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <button onclick="loadBooks()">Применить фильтр</button>
+      <div id="books" class="grid" style="margin-top: 12px"></div>
+    </section>
+
+    <section>
+      <h2>Оформление покупки / аренды</h2>
+      <div class="row">
+        <div>
+          <label>ID книги <input id="order-book-id" type="number" /></label>
+        </div>
+        <div>
+          <label>Имя покупателя <input id="order-user" /></label>
+        </div>
+        <div>
+          <label
+            >Режим
+            <select id="order-mode">
+              <option value="purchase">Покупка</option>
+              <option value="rent">Аренда</option>
+            </select>
+          </label>
+        </div>
+        <div id="duration-wrapper">
+          <label
+            >Срок аренды
+            <select id="order-duration">
+              <option value="2w">2 недели</option>
+              <option value="1m">1 месяц</option>
+              <option value="3m">3 месяца</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <button onclick="createOrder()">Оформить</button>
+    </section>
+
+    <section>
+      <h2>Администратор</h2>
+      <div class="row">
+        <div>
+          <label
+            >Admin key <input id="admin-key" placeholder="admin123"
+          /></label>
+        </div>
+      </div>
+
+      <h3>Добавить книгу</h3>
+      <div class="row">
+        <div>
+          <label>Название <input id="admin-title" /></label>
+        </div>
+        <div>
+          <label>Автор <input id="admin-author" /></label>
+        </div>
+        <div>
+          <label>Год <input id="admin-year" type="number" /></label>
+        </div>
+        <div>
+          <label>Категория <input id="admin-category" /></label>
+        </div>
+        <div>
+          <label
+            >Цена <input id="admin-price" type="number" step="0.01"
+          /></label>
+        </div>
+        <div>
+          <label
+            >Статус
+            <select id="admin-status">
+              <option value="available">Доступна</option>
+              <option value="unavailable">Нет в наличии</option>
+              <option value="sold">Продана</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <button onclick="adminAdd()">Добавить книгу</button>
+
+      <h3>Список книг (для правок)</h3>
+      <button onclick="loadAdminBooks()">Обновить список</button>
+      <div id="admin-books" class="grid" style="margin-top: 10px"></div>
+
+      <h3>Аренды / покупки</h3>
+      <button onclick="loadRentals()">Показать аренды</button>
+      <div id="rentals"></div>
+
+      <h3>Напоминания (ближайшие 3 дня)</h3>
+      <button onclick="loadReminders()">Показать напоминания</button>
+      <div id="reminders"></div>
+      <small
+        >Автоматическое напоминание пишет в консоль, когда до конца аренды
+        меньше суток.</small
+      >
+    </section>
+
+    <section>
+      <h2>Статус</h2>
+      <pre id="status"></pre>
+    </section>
+
+    <script>
+      const statusEl = document.getElementById("status");
+      const booksEl = document.getElementById("books");
+      const adminBooksEl = document.getElementById("admin-books");
+      const rentalsEl = document.getElementById("rentals");
+      const remindersEl = document.getElementById("reminders");
+      const toastBox = document.getElementById("toast-container");
+
+      function showToast(message, type = "info") {
+        const el = document.createElement("div");
+        el.className = `toast toast-${type}`;
+        el.textContent = message;
+        toastBox.appendChild(el);
+        setTimeout(() => el.classList.add("hide"), 2500);
+        setTimeout(() => el.remove(), 3200);
+      }
+
+      function setStatus(msg) {
+        statusEl.textContent = msg;
+      }
+
+      function adminHeaders() {
+        const key = document.getElementById("admin-key").value || "";
+        return key ? { "x-admin-key": key } : {};
+      }
+
+      async function api(path, options = {}) {
+        const headers = {
+          "Content-Type": "application/json",
+          ...(options.headers || {}),
+        };
+        const res = await fetch(path, { ...options, headers });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Ошибка запроса");
+        }
+        return data;
+      }
+
+      async function loadBooks() {
+        const category = document.getElementById("filter-category").value;
+        const author = document.getElementById("filter-author").value;
+        const year = document.getElementById("filter-year").value;
+        const sort = document.getElementById("filter-sort").value;
+        const params = new URLSearchParams();
+        if (category) params.append("category", category);
+        if (author) params.append("author", author);
+        if (year) params.append("year", year);
+        if (sort) params.append("sort", sort);
+        try {
+          const books = await api(`/api/books?${params.toString()}`);
+          booksEl.innerHTML = "";
+          books.forEach((b) => {
+            const div = document.createElement("div");
+            div.className = "book";
+            div.innerHTML = `
+              <strong>${b.title}</strong>
+              <div class="meta">${b.author}, ${b.year}</div>
+              <div class="meta">${b.category}</div>
+              <div class="meta">Цена: ${b.price} ₽</div>
+              <div class="meta">Статус: <span class="pill">${b.status}</span></div>
+              <div class="meta">ID: ${b.id}</div>
+            `;
+            booksEl.appendChild(div);
+          });
+          setStatus(`Найдено книг: ${books.length}`);
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      document.getElementById("order-mode").addEventListener("change", (e) => {
+        const wrap = document.getElementById("duration-wrapper");
+        wrap.style.display = e.target.value === "rent" ? "block" : "none";
+      });
+
+      async function createOrder() {
+        const bookId = Number(document.getElementById("order-book-id").value);
+        const userName = document.getElementById("order-user").value;
+        const mode = document.getElementById("order-mode").value;
+        const duration = document.getElementById("order-duration").value;
+        try {
+          const res = await api("/api/rent", {
+            method: "POST",
+            body: JSON.stringify({ bookId, userName, mode, duration }),
+          });
+          setStatus(res.message || "Операция выполнена");
+          showToast(res.message || "Операция выполнена", "success");
+          loadBooks();
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      async function adminAdd() {
+        const payload = {
+          title: document.getElementById("admin-title").value,
+          author: document.getElementById("admin-author").value,
+          year: Number(document.getElementById("admin-year").value),
+          category: document.getElementById("admin-category").value,
+          price: Number(document.getElementById("admin-price").value),
+          status: document.getElementById("admin-status").value,
+        };
+        try {
+          const res = await api("/api/admin/books", {
+            method: "POST",
+            headers: adminHeaders(),
+            body: JSON.stringify(payload),
+          });
+          setStatus(res.message);
+          showToast(res.message, "success");
+          loadBooks();
+          loadAdminBooks();
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      async function loadAdminBooks() {
+        try {
+          const books = await api("/api/books");
+          adminBooksEl.innerHTML = "";
+          books.forEach((b) => {
+            const div = document.createElement("div");
+            div.className = "book";
+            div.innerHTML = `
+              <strong>${b.title}</strong>
+              <div class="meta">${b.author}, ${b.year}</div>
+              <div class="meta">${b.category}</div>
+              <div class="meta">Цена: ${b.price} ₽</div>
+              <div class="meta">Статус: <span class="pill">${b.status}</span> | ID: ${b.id}</div>
+              <div class="row" style="margin-top:6px">
+                <input id="price-${b.id}" type="number" step="0.01" placeholder="Новая цена" />
+                <select id="status-${b.id}">
+                  <option value="available" ${b.status === "available" ? "selected" : ""}>Доступна</option>
+                  <option value="unavailable" ${b.status === "unavailable" ? "selected" : ""}>Нет в наличии</option>
+                  <option value="sold" ${b.status === "sold" ? "selected" : ""}>Продана</option>
+                </select>
+              </div>
+              <button onclick="adminUpdate(${b.id})">Обновить</button>
+              <button onclick="adminDelete(${b.id})" style="background:#f87171">Удалить</button>
+            `;
+            adminBooksEl.appendChild(div);
+          });
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      async function adminUpdate(id) {
+        const priceVal = document.getElementById(`price-${id}`).value;
+        const statusVal = document.getElementById(`status-${id}`).value;
+        const payload = {};
+        if (priceVal) payload.price = Number(priceVal);
+        if (statusVal) payload.status = statusVal;
+        try {
+          const res = await api(`/api/admin/books/${id}`, {
+            method: "PUT",
+            headers: adminHeaders(),
+            body: JSON.stringify(payload),
+          });
+          setStatus(res.message);
+          showToast(res.message, "success");
+          loadBooks();
+          loadAdminBooks();
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      async function adminDelete(id) {
+        if (!confirm("Удалить книгу?")) return;
+        try {
+          const res = await api(`/api/admin/books/${id}`, {
+            method: "DELETE",
+            headers: adminHeaders(),
+          });
+          setStatus(res.message);
+          showToast(res.message, "success");
+          loadBooks();
+          loadAdminBooks();
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      async function loadRentals() {
+        try {
+          const data = await api("/api/admin/rentals", {
+            headers: adminHeaders(),
+          });
+          rentalsEl.innerHTML = data
+            .map(
+              (r) => `
+              <div class="book">
+                <strong>${r.title}</strong>
+                <div class="meta">${r.author}</div>
+                <div class="meta">Пользователь: ${r.user_name}</div>
+                <div class="meta">Режим: ${r.mode}${r.duration_days ? `, ${r.duration_days} дн.` : ""}</div>
+                <div class="meta">Статус аренды: ${r.status}</div>
+                <div class="meta">Старт: ${r.start_at || "-"}</div>
+                <div class="meta">Истекает: ${r.expires_at || "—"}</div>
+              </div>
+            `
+            )
+            .join("");
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      async function loadReminders() {
+        try {
+          const data = await api("/api/admin/reminders", {
+            headers: adminHeaders(),
+          });
+          remindersEl.innerHTML = data.length
+            ? data
+                .map(
+                  (r) => `
+                  <div class="book">
+                    <strong>${r.title}</strong>
+                    <div class="meta">${r.author}</div>
+                    <div class="meta">Пользователь: ${r.user_name}</div>
+                    <div class="meta">Истекает: ${r.expires_at}</div>
+                  </div>
+                `
+                )
+                .join("")
+            : "<div>Нет истекающих аренд в ближайшие 3 дня.</div>";
+        } catch (err) {
+          setStatus(err.message);
+          showToast(err.message, "error");
+        }
+      }
+
+      // init
+      loadBooks();
+    </script>
+  </body>
+</html>
