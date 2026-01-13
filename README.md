@@ -57,7 +57,7 @@ git init
 git add .
 git commit -m "Bookshop app"
 git branch -M main
-git remote add origin https://github.com/<user>/<repo>.git
+git remote add origin https://github.com/yanushkayy/bookstore-web.git
 git push -u origin main
 ```
 
